@@ -97,6 +97,9 @@ ggplot(monthly_counts, aes(x = month, y = sightings)) +
     y = "Number of reported sightings"
   ) +
   theme_minimal()
+ggsave("Numbats_Monthly.png",
+       width = 8,
+       height = 5)
 ```
 
 From Figure 1, **November (212)** has the highest number of sightings, followed by **December (165)**. **June and July (7 each)** have much fewer sightings. November has the highest number of numbat sightings in Australia due to a perfect combination of their breeding cycle, weather conditions, and behavior.
@@ -123,6 +126,9 @@ ggplot(summer_winter, aes(x = season, y = sightings)) +
     y = "Number of reported sightings"
   ) +
   theme_minimal()
+ggsave("Numbats_Summer_Winter.png",
+       width = 8,
+       height = 5)
 ```
 
 Figure 2 shows **217 summer sightings compared with only 23 winter sightings**. I can calculate the ratio using the values from my table.
