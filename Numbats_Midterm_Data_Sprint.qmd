@@ -2,7 +2,7 @@
 title: "GEOG 4/6300 Midterm Data Sprint: Numbat Sightings"
 subtitle: "Are numbat sightings more frequent in summer or winter in Australia?"
 author: "Emmanuel Mensah"
-date: 13th October, 2016
+date: 13th October,2026
 format:
   html:
     toc: true
@@ -30,7 +30,6 @@ I chose this question because I can use the `month` variable to group records in
 First, I load the `tidyverse` package and read the CSV file. I use `glimpse()` to look at the columns and `nrow()` to check how many observations I have.
 
 ```{r}
-# The CSV file should be saved in the same folder as this .qmd file.
 library(tidyverse)
 
 numbats <- read_csv("numbats.csv", show_col_types = FALSE)
@@ -87,12 +86,6 @@ The table shows **283 sightings in spring**, **217 in summer**, **29 in autumn**
 Here I use `count()` to find how many sightings were recorded in each month. I then use `ggplot()` and `geom_col()` to create a bar graph. This helps me see the monthly pattern before comparing seasons.
 
 ```{r}
-#| label: fig-months
-#| fig-cap: "Numbat sighting records by month."
-#| fig-alt: "Bar chart of reported numbat sightings by month from January to December. November is highest at 212, December is next at 165, and June and July each have 7 records."
-#| fig-width: 9
-#| fig-height: 5
-
 monthly_counts <- numbats_clean %>%
   count(month, name = "sightings")
 
@@ -113,12 +106,6 @@ From Figure 1, **November (212)** has the highest number of sightings, followed 
 Now I use `filter()` to select only summer and winter, then `count()` to compare them directly. The numbers are added above the bars so it is easier to read the results.
 
 ```{r}
-#| label: fig-seasons
-#| fig-cap: "Comparison of numbat sighting records in summer and winter."
-#| fig-alt: "Bar chart comparing 217 numbat reports in the Australian summer with 23 in winter. The summer bar is about 9.4 times the height of the winter bar."
-#| fig-width: 7
-#| fig-height: 5
-
 summer_winter <- numbats_clean %>%
   filter(season %in% c("Summer", "Winter")) %>%
   count(season, name = "sightings") %>%
