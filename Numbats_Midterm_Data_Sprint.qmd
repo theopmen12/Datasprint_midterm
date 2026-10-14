@@ -1,0 +1,172 @@
+---
+title: "GEOG 4/6300 Midterm Data Sprint: Numbat Sightings"
+subtitle: "Are numbat sightings more frequent in summer or winter in Australia?"
+author: "Emmanuel Mensah"
+date: 13th October, 2016
+format:
+  html:
+    toc: true
+    embed-resources: true
+    code-fold: false
+execute:
+  warning: false
+  message: false
+---
+
+# Introduction
+
+For this project, I am using the **Numbats in Australia** dataset from [TidyTuesday (March 7, 2023)](https://github.com/rfordatascience/tidytuesday/tree/main/data/2023/2023-03-07). The observations originally came from the Atlas of Living Australia. Each row is a recorded numbat occurrence or sighting, rather than a count of every numbat in the wild.
+
+The data include the **date** of a record (`eventDate`), the **month** (`month`), the **year** (`year`), the **location** (`decimalLatitude` and `decimalLongitude`), and the **source** of the record (`dataResourceName`). The dataset also includes information about time of day and weather, although I will focus on the month to answer my question.
+
+**Research question: Are numbat sightings more frequent in summer or winter in Australia?**
+
+I chose this question because I can use the `month` variable to group records into seasons and compare the number of sightings. Since Australia is in the Southern Hemisphere, **summer is December–February** and **winter is June–August**.
+
+# Analysis
+
+## 1. Load and explore the dataset
+
+First, I load the `tidyverse` package and read the CSV file. I use `glimpse()` to look at the columns and `nrow()` to check how many observations I have.
+
+```{r}
+# The CSV file should be saved in the same folder as this .qmd file.
+library(tidyverse)
+
+numbats <- read_csv("numbats.csv", show_col_types = FALSE)
+
+glimpse(numbats)
+nrow(numbats)
+```
+
+The dataset contains **805 records**.
+
+## 2. Check missing values and clean the data
+
+To compare seasons, I need a month for each record. I first count missing months, then use `filter()` to keep records with a month.
+
+```{r}
+sum(is.na(numbats$month))
+
+numbats_clean <- numbats %>%
+  filter(!is.na(month))
+
+nrow(numbats_clean)
+```
+
+I found **253 records without a month**, so **552 records** remain for my seasonal comparison. Removing missing months helps me avoid assigning a season to a record when its date is unknown.
+
+## 3. Group the months into seasons
+
+Next, I use `mutate()` and `case_when()` to create a new column called `season`. I make `month` an ordered factor so the months will appear from January to December in my graph.
+
+```{r}
+numbats_clean <- numbats_clean %>%
+  mutate(
+    season = case_when(
+      month %in% c("Dec", "Jan", "Feb") ~ "Summer",
+      month %in% c("Mar", "Apr", "May") ~ "Autumn",
+      month %in% c("Jun", "Jul", "Aug") ~ "Winter",
+      month %in% c("Sep", "Oct", "Nov") ~ "Spring"
+    ),
+    month = factor(month, levels = month.abb)
+  ) %>%
+  filter(!is.na(season))
+
+season_counts <- numbats_clean %>%
+  count(season, name = "sightings") %>%
+  arrange(desc(sightings))
+
+season_counts
+```
+
+The table shows **283 sightings in spring**, **217 in summer**, **29 in autumn**, and **23 in winter**. I will focus on summer and winter because that is my research question.
+
+## 4. Visualization 1: Sightings in each month
+
+Here I use `count()` to find how many sightings were recorded in each month. I then use `ggplot()` and `geom_col()` to create a bar graph. This helps me see the monthly pattern before comparing seasons.
+
+```{r}
+#| label: fig-months
+#| fig-cap: "Numbat sighting records by month."
+#| fig-alt: "Bar chart of reported numbat sightings by month from January to December. November is highest at 212, December is next at 165, and June and July each have 7 records."
+#| fig-width: 9
+#| fig-height: 5
+
+monthly_counts <- numbats_clean %>%
+  count(month, name = "sightings")
+
+ggplot(monthly_counts, aes(x = month, y = sightings)) +
+  geom_col(fill = "steelblue") +
+  labs(
+    title = "Numbat sightings by month",
+    x = "Month",
+    y = "Number of reported sightings"
+  ) +
+  theme_minimal()
+```
+
+From Figure 1, **November (212)** has the highest number of sightings, followed by **December (165)**. **June and July (7 each)** have much fewer sightings. November has the highest number of numbat sightings in Australia due to a perfect combination of their breeding cycle, weather conditions, and behavior.
+
+## 5. Visualization 2: Summer versus winter
+
+Now I use `filter()` to select only summer and winter, then `count()` to compare them directly. The numbers are added above the bars so it is easier to read the results.
+
+```{r}
+#| label: fig-seasons
+#| fig-cap: "Comparison of numbat sighting records in summer and winter."
+#| fig-alt: "Bar chart comparing 217 numbat reports in the Australian summer with 23 in winter. The summer bar is about 9.4 times the height of the winter bar."
+#| fig-width: 7
+#| fig-height: 5
+
+summer_winter <- numbats_clean %>%
+  filter(season %in% c("Summer", "Winter")) %>%
+  count(season, name = "sightings") %>%
+  mutate(season = factor(season, levels = c("Summer", "Winter")))
+
+summer_winter
+
+ggplot(summer_winter, aes(x = season, y = sightings)) +
+  geom_col(fill = "steelblue", width = 0.6) +
+  geom_text(aes(label = sightings), vjust = -0.5) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.15))) +
+  labs(
+    title = "Summer versus winter numbat sightings",
+    x = "Season",
+    y = "Number of reported sightings"
+  ) +
+  theme_minimal()
+```
+
+Figure 2 shows **217 summer sightings compared with only 23 winter sightings**. I can calculate the ratio using the values from my table.
+
+```{r}
+summer_n <- summer_winter %>%
+  filter(season == "Summer") %>%
+  pull(sightings)
+
+winter_n <- summer_winter %>%
+  filter(season == "Winter") %>%
+  pull(sightings)
+
+summer_n / winter_n
+```
+
+The result is about **9.4**, meaning there are approximately **9.4 times as many summer sighting records as winter records** in this dataset.
+
+## Discussion
+
+#Based on my analysis, numbat sightings are recorded more frequently in summer than in winter in Australia. My second graph answers the question directly: there are 217 summer sightings and 23 winter sightings, which is about 9.4 times as many in summer. The first graph supports this pattern because December has 165 records, while June and July have just 7 each.One interesting result is that November has more sightings than any other month (212). This means the highest number of records is actually in spring, not summer. My research question, however, only compares summer and winter.There are limitations to my results. I had to leave out 253 records because they were missing a month. Also, this dataset combines reports from different sources and years. People might look for and report numbats more during some seasons than others, and not every sighting is necessarily recorded. As a result, my findings show when sighting records are more common; they do not prove that numbat population size is greater in summer or that numbats are always more active then.
+
+# Tie to Class
+
+This exercise gave me a chance to practice at least three important skills we have covered in GEOG 4/6300:
+
+1. **Loading and exploring data.** I used `read_csv()`, `glimpse()`, and `nrow()` to learn about the dataset and its variables before analyzing it. This is similar to the first steps of our class labs.
+2. **Cleaning and transforming data.** I used `filter()` to remove observations that had no month. I also used `mutate()` and `case_when()` to create a new season variable and `count()` to summarize sightings. This showed me how to change raw observations into data that I can compare.
+3. **Creating and interpreting visualizations.** I used `ggplot()` with `geom_col()` to create two graphs. The monthly graph helped me explore the pattern, while the summer–winter graph helped me answer the question directly.
+4. **Thinking critically about results.** I considered missing data and uneven reporting across seasons. I learned that finding a pattern in data is different from proving why that pattern happens.
+
+# Data source
+
+TidyTuesday (2023, March 7), *Numbats in Australia*: [GitHub dataset and description](https://github.com/rfordatascience/tidytuesday/tree/main/data/2023/2023-03-07). Original sightings: [Atlas of Living Australia](https://www.ala.org.au/).
